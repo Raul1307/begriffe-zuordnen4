@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Begriffe zuordnen mit Win-Sound</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #f0f4f8;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin: 0;
+        padding: 50px;
+    }
+    h1 {
+        text-align: center;
+        font-size: 44px;
+        margin-bottom: 50px;
+        color: #333;
+    }
+    .container {
+        display: flex;
+        justify-content: center;
+        gap: 80px;
+        flex-wrap: wrap;
+    }
+    .dropzone {
+        background: #fff;
+        border: 4px dashed #999;
+        border-radius: 20px;
+        width: 320px;
+        min-height: 260px;
+        padding: 30px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        transition: background-color 0.3s, border-color 0.3s;
+    }
+    .dropzone h2 {
+        margin: 0 0 25px 0;
+        text-align: center;
+        font-size: 28px;
+        color: #555;
+    }
+    .item {
+        background-color: #4f46e5;
+        color: #fff;
+        padding: 25px 35px;
+        margin: 20px 0;
+        border-radius: 12px;
+        cursor: grab;
+        font-size: 26px;
+        user-select: none;
+        transition: transform 0.2s, background-color 0.3s;
+    }
+    .item.dragging {
+        opacity: 0.6;
+        transform: scale(1.15);
+    }
+    #win-message {
+        display: none;
+        font-size: 40px;
+        color: #16a34a;
+        margin-top: 20px;
+        font-weight: bold;
+        text-align: center;
+    }
+</style>
+</head>
+<body>
+
+<h1>Ordne die Begriffe zu!</h1>
+
+<div class="container">
+    <div class="dropzone" id="maschinennah">
+        <h2>Maschinennah</h2>
+    </div>
+    <div class="dropzone" id="menschennah">
+        <h2>Menschennah</h2>
+    </div>
+</div>
+
+<div class="container" id="item-pool" style="margin-top: 60px;">
+    <div class="item" draggable="true" data-answer="maschinennah">Maschinensprache</div>
+    <div class="item" draggable="true" data-answer="maschinennah">Assembler</div>
+    <div class="item" draggable="true" data-answer="menschennah">Hochsprache (z. B. C, Java)</div>
+</div>
+
+<div id="win-message">🎉 Super! Alles richtig zugeordnet! 🎉</div>
+
+<audio id="sound-correct">
+    <source src="https://freesound.org/data/previews/66/66717_931655-lq.mp3" type="audio/mpeg">
+</audio>
+<audio id="sound-wrong">
+    <source src="https://freesound.org/data/previews/331/331912_3248244-lq.mp3" type="audio/mpeg">
+</audio>
+<audio id="sound-win">
+    <source src="https://cdn.freesound.org/previews/270/270404_5123851-lq.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+let dragged = null;
+const soundCorrect = document.getElementById('sound-correct');
+const soundWrong = document.getElementById('sound-wrong');
+const soundWin = document.getElementById('sound-win');
+const winMessage = document.getElementById('win-message');
+
+const items = document.querySelectorAll('.item');
+const totalItems = items.length; // Merkt sich die Anzahl der Aufgaben
+const dropzones = document.querySelectorAll('.dropzone');
+
+let correctCount = 0;
+
+items.forEach(item => {
+    item.addEventListener('dragstart', e => {
+        dragged = e.target;
+        setTimeout(() => dragged.classList.add('dragging'), 0);
+    });
+    item.addEventListener('dragend', e => {
+        if (dragged) dragged.classList.remove('dragging');
+        dragged = null;
+    });
+});
+
+dropzones.forEach(zone => {
+    zone.addEventListener('dragover', e => e.preventDefault());
+    zone.addEventListener('drop', e => {
+        e.preventDefault();
+        if (!dragged) return;
+
+        const isCorrect = dragged.dataset.answer === zone.id;
+
+        if (isCorrect) {
+            // Richtig zugeordnet
+            zone.appendChild(dragged);
+            dragged.style.backgroundColor = '#16a34a'; // Grün färben
+            dragged.setAttribute('draggable', 'false'); // Nicht mehr bewegbar
+            dragged.style.cursor = 'default';
+            
+            correctCount++;
+            
+            // Prüfen: War das der letzte Begriff?
+            if (correctCount === totalItems) {
+                // Finale!
+                soundWin.currentTime = 0;
+                soundWin.play();
+                winMessage.style.display = 'block';
+            } else {
+                // Normaler "Richtig"-Sound
+                soundCorrect.currentTime = 0;
+                soundCorrect.play();
+            }
+        } else {
+            // Falsch zugeordnet
+            dragged.style.backgroundColor = '#dc2626'; // Kurz rot färben
+            soundWrong.currentTime = 0;
+            soundWrong.play();
+            
+            // Nach kurzer Zeit Farbe zurücksetzen
+            const tempItem = dragged;
+            setTimeout(() => {
+                if (tempItem.parentElement.id === "item-pool") {
+                    tempItem.style.backgroundColor = '#4f46e5';
+                }
+            }, 500);
+        }
+    });
+});
+</script>
+</body>
+</html>
